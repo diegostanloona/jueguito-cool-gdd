@@ -16,10 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install jq
+      - name: Install Git and jq
         run: |
           apt-get update
-          apt-get install -y jq
+          apt-get install -y git jq
 
       - name: Determine version type
         id: determine_version
