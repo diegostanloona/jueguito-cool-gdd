@@ -18,6 +18,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Install Git and jq
+        run: |
+          apt-get update
+          apt-get install -y git jq
+
       - name: Initialize Git repository
         run: |
           git init
