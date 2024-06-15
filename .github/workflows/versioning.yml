@@ -26,7 +26,7 @@ jobs:
       - name: Initialize Git repository
         run: |
           git init
-          git config --global init.defaultBranch main
+          git branch -m main
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
 
@@ -43,11 +43,11 @@ jobs:
 
           if [ "$merged" = true ] && [ "$base_branch" = "main" ]; then
             # Determine version type based on keywords in the PR title
-            if echo "$pr_title" | grep -qiE '^\s*MAJOR:'; then
+            if echo "$pr_title" | grep -qiE '^\s*MAJOR'; then
               echo "::set-output name=version_type::major"
-            elif echo "$pr_title" | grep -qiE '^\s*MINOR:'; then
+            elif echo "$pr_title" | grep -qiE '^\s*MINOR'; then
               echo "::set-output name=version_type::minor"
-            elif echo "$pr_title" | grep -qiE '^\s*PATCH:'; then
+            elif echo "$pr_title" | grep -qiE '^\s*PATCH'; then
               echo "::set-output name=version_type::patch"
             else
               echo "::set-output name=version_type::none"
