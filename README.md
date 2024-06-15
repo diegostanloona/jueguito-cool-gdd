@@ -3,10 +3,13 @@
 ## PROJECT STRUCTURE
 
 ```
-  project_name/              # Directorio raíz del proyecto
 │
 ├── assets/                # Directorio para almacenar todos los recursos del juego
-│   ├── sprites/           # Sprites y texturas del juego
+│   ├── sprites/
+│       ├── player/
+│       ├── enemies/
+│       ├── ui/ 
+│       └── ...
 │   ├── audio/             # Archivos de sonido y música
 │   ├── fonts/             # Fuentes utilizadas en el juego
 │   ├── shaders/           # Shaders personalizados
@@ -26,13 +29,8 @@
 │   ├── utilities/         # Scripts de utilidad
 │   └── ...
 │
-├── plugins/               # Directorio para almacenar los plugins de Godot (si se utilizan)
 │
 ├── addons/                # Directorio para almacenar los addons (si se utilizan)
-│
-├── config/                # Directorio para archivos de configuración adicionales
-│   ├── project.godot      # Archivo principal del proyecto Godot
-│   └── ...
 │
 ├── exports/               # Directorio donde se exportan los binarios del juego
 │
