@@ -38,15 +38,15 @@ jobs:
           pr_title="${{ github.event.pull_request.title }}"
           pr_title_lower=$(echo "$pr_title" | tr '[:upper:]' '[:lower:]')
 
-          if [[ "$pr_title_lower" == major* ]]; then
+          if [[ "$pr_title_lower" == *patch* ]]; then
+            patch=$((patch + 1))
+          elif [[ "$pr_title_lower" == *minor* ]]; then
+            minor=$((minor + 1))
+            patch=0
+          elif [[ "$pr_title_lower" == *major* ]]; then
             major=$((major + 1))
             minor=0
             patch=0
-          elif [[ "$pr_title_lower" == minor* ]]; then
-            minor=$((minor + 1))
-            patch=0
-          elif [[ "$pr_title_lower" == patch* ]]; then
-            patch=$((patch + 1))
           else
             echo "No version bump detected."
             exit 0
