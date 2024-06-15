@@ -1,26 +1,48 @@
-on:
-  push:
-    # Sequence of patterns matched against refs/tags
-    tags:
-      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
-
-name: Create Release
-
 jobs:
   build:
     name: Create Release
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest  # Usar una imagen que incluya jq instalado
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Install jq
+        run: |
+          apt-get update
+          apt-get install -y jq
+
+      - name: Determine version type
+        id: determine_version
+        run: |
+          commit_message=$(git log --format=%B -n 1 ${{ github.sha }})
+          pr_title=$(jq -r .pull_request.title "${GITHUB_EVENT_PATH}")
+
+          if [ "$commit_message" = "" ]; then
+            echo "Commit message is empty"
+            exit 1
+          fi
+
+          if echo "$commit_message" | grep -qiE '^\s*MAJOR'; then
+            echo "::set-output name=version_type::major"
+          elif echo "$commit_message" | grep -qiE '^\s*MINOR'; then
+            echo "::set-output name=version_type::minor"
+          elif echo "$commit_message" | grep -qiE '^\s*PATCH'; then
+            echo "::set-output name=version_type::patch"
+          else
+            echo "::set-output name=version_type::none"
+          fi
+
       - name: Create Release
+        if: steps.determine_version.outputs.version_type != 'none'
         id: create_release
         uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
+          tag_name: ${{ github.sha }}
+          release_name: Release ${{ github.sha }}
           body: |
             Changes in this Release
             - First Change
