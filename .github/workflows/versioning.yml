@@ -1,3 +1,11 @@
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+name: Create Release
+
 jobs:
   build:
     name: Create Release
