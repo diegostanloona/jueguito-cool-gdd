@@ -1,0 +1,28 @@
+name: Validate PR Title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize]
+
+jobs:
+  validate-pr-title:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Validate pull request title
+        run: |
+          # Get the pull request title from the GitHub event
+          pr_title="${{ github.event.pull_request.title }}"
+          echo "Pull Request title: $pr_title"
+          
+          # Check if the pull request title starts with PATCH, MINOR, or MAJOR
+          if [[ ! "$pr_title" =~ ^(PATCH|MINOR|MAJOR) ]]; then
+            echo "Error: Pull request title must start with 'PATCH', 'MINOR', or 'MAJOR'."
+            exit 1
+          fi
+
+      - name: Success message
+        run: echo "Pull request title is valid."
