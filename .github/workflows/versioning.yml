@@ -1,74 +1,60 @@
+name: Release on Merge
+
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches:
       - main
 
-name: Create Release
-
 jobs:
-  build:
-    name: Create Release
+  release:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
-      - name: Install Git and jq
+      - name: Determine new version
+        id: new_version
         run: |
-          apt-get update
-          apt-get install -y git jq
+          # Get the latest tag
+          latest_tag=$(git describe --tags --abbrev=0)
+          
+          # Extract MAJOR, MINOR, PATCH from the latest tag
+          IFS='.' read -r -a version_parts <<< "$latest_tag"
+          major=${version_parts[0]:-0}
+          minor=${version_parts[1]:-0}
+          patch=${version_parts[2]:-0}
 
-      - name: Initialize Git repository
-        run: |
-          git init
-          git branch -m main
-          git config --global --add safe.directory /__w/jueguito-cool-gdd/jueguito-cool-gdd
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-
-      - name: Determine version type
-        id: determine_version
-        run: |
-          # Get the pull request details
-          pr_number=$(jq -r .pull_request.number "${GITHUB_EVENT_PATH}")
-          pr_title=$(jq -r .pull_request.title "${GITHUB_EVENT_PATH}")
-
-          # Check if the pull request was merged and to which target
-          merged=$(jq -r .pull_request.merged "${GITHUB_EVENT_PATH}")
-          base_branch=$(jq -r .pull_request.base.ref "${GITHUB_EVENT_PATH}")
-
-          if [ "$merged" = true ] && [ "$base_branch" = "main" ]; then
-            # Determine version type based on keywords in the PR title
-            if echo "$pr_title" | grep -qiE '^\s*MAJOR'; then
-              echo "::set-output name=version_type::major"
-            elif echo "$pr_title" | grep -qiE '^\s*MINOR'; then
-              echo "::set-output name=version_type::minor"
-            elif echo "$pr_title" | grep -qiE '^\s*PATCH'; then
-              echo "::set-output name=version_type::patch"
-            else
-              echo "::set-output name=version_type::none"
-            fi
+          # Determine the type of change based on commit messages
+          if git log -1 --pretty=%B | grep -iq 'MAJOR'; then
+            major=$((major + 1))
+            minor=0
+            patch=0
+          elif git log -1 --pretty=%B | grep -iq 'MINOR'; then
+            minor=$((minor + 1))
+            patch=0
           else
-            echo "::set-output name=version_type::none"
+            patch=$((patch + 1))
           fi
 
-      - name: Create Release
-        if: steps.determine_version.outputs.version_type != 'none'
-        id: create_release
+          # Construct the new version
+          new_version="$major.$minor.$patch"
+          echo "New version: $new_version"
+          echo "::set-output name=new_version::$new_version"
+
+      - name: Create GitHub release
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ github.sha }}
-          release_name: Release ${{ github.sha }}
+          tag_name: v${{ steps.new_version.outputs.new_version }}
+          release_name: v${{ steps.new_version.outputs.new_version }}
           body: |
-            Changes in this Release
-            - First Change
-            - Second Change
+            Release of version v${{ steps.new_version.outputs.new_version }}
           draft: false
           prerelease: false
+
+      - name: Push new tag
+        run: |
+          git tag v${{ steps.new_version.outputs.new_version }}
+          git push origin v${{ steps.new_version.outputs.new_version }}
