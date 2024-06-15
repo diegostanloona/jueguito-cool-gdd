@@ -11,33 +11,41 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     container:
-      image: ubuntu:latest  # Usar una imagen que incluya jq instalado
+      image: ubuntu:latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-      - name: Install Git and jq
+      - name: Initialize Git repository
         run: |
-          apt-get update
-          apt-get install -y git jq
+          git init
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
 
       - name: Determine version type
         id: determine_version
         run: |
-          commit_message=$(git log --format=%B -n 1 ${{ github.sha }})
+          # Get the pull request details
+          pr_number=$(jq -r .pull_request.number "${GITHUB_EVENT_PATH}")
           pr_title=$(jq -r .pull_request.title "${GITHUB_EVENT_PATH}")
 
-          if [ "$commit_message" = "" ]; then
-            echo "Commit message is empty"
-            exit 1
-          fi
+          # Check if the pull request was merged and to which target
+          merged=$(jq -r .pull_request.merged "${GITHUB_EVENT_PATH}")
+          base_branch=$(jq -r .pull_request.base.ref "${GITHUB_EVENT_PATH}")
 
-          if echo "$commit_message" | grep -qiE '^\s*MAJOR'; then
-            echo "::set-output name=version_type::major"
-          elif echo "$commit_message" | grep -qiE '^\s*MINOR'; then
-            echo "::set-output name=version_type::minor"
-          elif echo "$commit_message" | grep -qiE '^\s*PATCH'; then
-            echo "::set-output name=version_type::patch"
+          if [ "$merged" = true ] && [ "$base_branch" = "main" ]; then
+            # Determine version type based on keywords in the PR title
+            if echo "$pr_title" | grep -qiE '^\s*MAJOR:'; then
+              echo "::set-output name=version_type::major"
+            elif echo "$pr_title" | grep -qiE '^\s*MINOR:'; then
+              echo "::set-output name=version_type::minor"
+            elif echo "$pr_title" | grep -qiE '^\s*PATCH:'; then
+              echo "::set-output name=version_type::patch"
+            else
+              echo "::set-output name=version_type::none"
+            fi
           else
             echo "::set-output name=version_type::none"
           fi
